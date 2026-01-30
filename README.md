@@ -10,11 +10,23 @@ Python 3 (bez zewnetrznych zaleznosci).
 
 ## Instalacja
 
+### Linux / macOS
+
 ```bash
 ln -s $(pwd)/dni_robocze.py ~/.local/bin/dni_robocze
 ```
 
 Po tym komenda `dni_robocze` będzie dostępna globalnie (wymaga `~/.local/bin` w `PATH`).
+
+### Windows
+
+Utwórz plik `dni_robocze.cmd` w katalogu dostępnym w `PATH` (np. `%USERPROFILE%\.local\bin\`):
+
+```cmd
+@python "%USERPROFILE%\Documents\kodowanie\dni_robocze\dni_robocze.py" %*
+```
+
+Alternatywnie dodaj katalog ze skryptem do zmiennej środowiskowej `PATH` i uruchamiaj przez `python dni_robocze.py`.
 
 ## Użycie
 
