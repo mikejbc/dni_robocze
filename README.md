@@ -1,6 +1,6 @@
 # dni_robocze
 
-Kalkulator dni roboczych w Polsce. Uwzglednia weekendy i wszystkie 13 polskich swiat ustawowych (w tym ruchome, zalezne od Wielkanocy).
+Kalkulator dni roboczych w Polsce. Uwzglednia weekendy i polskie swieta ustawowe (13 do 2024, 14 od 2025 — Wigilia), w tym ruchome zalezne od Wielkanocy.
 
 Obsługiwane lata: 2020-2030.
 
@@ -63,6 +63,7 @@ Stałe:
 - 15 sierpnia — Wniebowzięcie NMP
 - 1 listopada — Wszystkich Świętych
 - 11 listopada — Święto Niepodległości
+- 24 grudnia — Wigilia Bożego Narodzenia (od 2025)
 - 25 grudnia — Boże Narodzenie (pierwszy dzień)
 - 26 grudnia — Boże Narodzenie (drugi dzień)
 
