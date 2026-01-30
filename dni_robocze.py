@@ -177,12 +177,14 @@ DAY_NAMES_PL = {
 
 
 def parse_date(date_str):
-    """Parse a date string in YYYY-MM-DD format."""
+    """Parse a date string in YYYY-MM-DD, YYYY.MM.DD, or YYYY MM DD format."""
+    normalized = date_str.replace(".", "-").replace(" ", "-")
     try:
-        return datetime.date.fromisoformat(date_str)
+        return datetime.date.fromisoformat(normalized)
     except ValueError:
         raise argparse.ArgumentTypeError(
-            f"Nieprawidłowy format daty: '{date_str}'. Użyj formatu YYYY-MM-DD."
+            f"Nieprawidłowy format daty: '{date_str}'. "
+            f"Użyj formatu YYYY-MM-DD, YYYY.MM.DD lub YYYY MM DD."
         )
 
 
