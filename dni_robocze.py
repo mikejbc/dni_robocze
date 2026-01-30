@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """Polski kalkulator dni roboczych / Polish Work Days Calculator.
 
-Calculates work days in Poland accounting for weekends and all 13 Polish
-public holidays. Easter dates are hardcoded for years 2020-2030.
+Calculates work days in Poland accounting for weekends and all Polish
+public holidays (14 from 2025+, 13 before). Easter dates are hardcoded
+for years 2020-2030.
 """
 
 import argparse
@@ -28,7 +29,7 @@ SUPPORTED_YEARS = sorted(EASTER_DATES.keys())
 
 
 def get_holidays(year):
-    """Return a set of datetime.date for all 13 Polish public holidays in a given year."""
+    """Return a set of datetime.date for all Polish public holidays in a given year."""
     if year not in EASTER_DATES:
         raise ValueError(
             f"Rok {year} nie jest obsługiwany. "
@@ -55,6 +56,10 @@ def get_holidays(year):
         easter + datetime.timedelta(days=60),            # Boże Ciało
     }
 
+    # Wigilia — dzień wolny od pracy od 2025 roku
+    if year >= 2025:
+        holidays.add(datetime.date(year, 12, 24))
+
     return holidays
 
 
@@ -70,6 +75,9 @@ HOLIDAY_NAMES = [
     (12, 26, "Boże Narodzenie (drugi dzień)"),
 ]
 
+# Wigilia — od 2025 roku
+WIGILIA = (12, 24, "Wigilia Bożego Narodzenia")
+
 
 def get_holidays_with_names(year):
     """Return a sorted list of (date, name) tuples for all holidays in a year."""
@@ -84,6 +92,10 @@ def get_holidays_with_names(year):
     result = []
     for month, day, name in HOLIDAY_NAMES:
         result.append((datetime.date(year, month, day), name))
+
+    if year >= 2025:
+        m, d, name = WIGILIA
+        result.append((datetime.date(year, m, d), name))
 
     result.append((easter, "Wielkanoc"))
     result.append((easter + datetime.timedelta(days=1), "Poniedziałek Wielkanocny"))
