@@ -8,6 +8,14 @@ Obsługiwane lata: 2020-2030.
 
 Python 3 (bez zewnetrznych zaleznosci).
 
+## Instalacja
+
+```bash
+ln -s $(pwd)/dni_robocze.py ~/.local/bin/dni_robocze
+```
+
+Po tym komenda `dni_robocze` będzie dostępna globalnie (wymaga `~/.local/bin` w `PATH`).
+
 ## Użycie
 
 ### Policz dni robocze między datami
