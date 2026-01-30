@@ -30,11 +30,14 @@ Alternatywnie dodaj katalog ze skryptem do zmiennej środowiskowej `PATH` i uruc
 
 ## Użycie
 
+Daty można podawać w formacie `YYYY-MM-DD`, `YYYY.MM.DD` lub `"YYYY MM DD"`.
+
 ### Policz dni robocze między datami
 
 ```
 ./dni_robocze.py count 2026-01-01 2026-12-31
-# Dni robocze od 2026-01-01 do 2026-12-31: 254
+./dni_robocze.py count 2026.01.01 2026.12.31
+# Dni robocze od 2026-01-01 do 2026-12-31: 253
 ```
 
 ### Wyświetl święta w danym roku
