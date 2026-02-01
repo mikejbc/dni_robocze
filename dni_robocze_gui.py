@@ -244,6 +244,7 @@ class DatePicker(tk.Frame):
     def __init__(self, master, label_text="Data:", **kwargs):
         super().__init__(master, bg=COLOR_BG, **kwargs)
         self._cal_frame = None
+        self._escape_id = None
         self._selected_date = datetime.date.today()
 
         tk.Label(
@@ -277,7 +278,7 @@ class DatePicker(tk.Frame):
             self._entry_var.set(dt.isoformat())
             self._day_label.configure(text=f"({DAY_NAMES_PL[dt.weekday()]})")
         except ValueError:
-            pass
+            self._entry_var.set(self._selected_date.isoformat())
 
     def _toggle_calendar(self):
         if self._cal_frame and self._cal_frame.winfo_exists():
@@ -319,7 +320,9 @@ class DatePicker(tk.Frame):
             self._cal_frame.destroy()
         self._cal_frame = None
         try:
-            self.winfo_toplevel().unbind("<Escape>", self._escape_id)
+            if self._escape_id:
+                self.winfo_toplevel().unbind("<Escape>", self._escape_id)
+                self._escape_id = None
         except (tk.TclError, ValueError, AttributeError):
             pass
 
