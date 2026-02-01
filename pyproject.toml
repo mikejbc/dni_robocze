@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "dni-robocze-pl"
-version = "1.0.3"
+version = "1.0.4"
 description = "Kalkulator dni roboczych w Polsce"
 readme = "README.md"
 license = "MIT"
