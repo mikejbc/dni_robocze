@@ -8,6 +8,8 @@ Obsługiwane lata: 2020-2030.
 
 Python 3 (bez zewnetrznych zaleznosci).
 
+Wersja GUI wymaga dodatkowo modułu `tkinter` (wbudowany w większość instalacji Pythona; na macOS/Homebrew: `brew install python-tk@3.XX`).
+
 ## Instalacja
 
 ### Linux / macOS
@@ -28,7 +30,20 @@ Utwórz plik `dni_robocze.cmd` w katalogu dostępnym w `PATH` (np. `%USERPROFILE
 
 Alternatywnie dodaj katalog ze skryptem do zmiennej środowiskowej `PATH` i uruchamiaj przez `python dni_robocze.py`.
 
-## Użycie
+## Wersja GUI
+
+```bash
+python3 dni_robocze_gui.py
+```
+
+Graficzny interfejs z trzema zakładkami:
+- **Policz dni** — oblicz dni robocze między dwiema datami
+- **Dodaj dni** — dodaj/odejmij dni robocze od daty
+- **Święta** — lista świąt ustawowych w wybranym roku
+
+Kalendarz z podglądem świąt (czerwone), weekendów (szare) i dnia dzisiejszego (pomarańczowy). Daty można wpisywać ręcznie lub wybierać z kalendarza.
+
+## Użycie (wiersz poleceń)
 
 Daty można podawać w formacie `YYYY-MM-DD`, `YYYY.MM.DD` lub `"YYYY MM DD"`.
 
