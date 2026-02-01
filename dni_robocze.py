@@ -10,6 +10,7 @@ import argparse
 import datetime
 import sys
 from importlib import metadata
+from typing import NoReturn
 
 # Hardcoded Easter Sunday dates for 2020-2030
 EASTER_DATES = {
@@ -231,7 +232,7 @@ def parse_date(date_str):
     return _range_check(dt)
 
 
-def fail(message):
+def fail(message) -> NoReturn:
     print(f"Błąd: {message}", file=sys.stderr)
     sys.exit(1)
 
@@ -303,9 +304,25 @@ def cmd_add(args):
         )
 
 
+HELP_EPILOG = """
+Przykłady:
+  dni-robocze count 2026-01-01 2026-12-31
+  dni-robocze count --from today --to +10 --quiet
+  dni-robocze add 2026-01-29 10
+  dni-robocze holidays 2026 --quiet
+  dni-robocze help add
+  dni-robocze --version
+
+Formaty dat: YYYY-MM-DD, YYYY.MM.DD, "YYYY MM DD", today, +N(d), -N(d)
+Zakres lat: 2020-2030
+"""
+
+
 def main():
     parser = argparse.ArgumentParser(
-        description="Kalkulator dni roboczych w Polsce (uwzględnia weekendy i święta)."
+        description="Kalkulator dni roboczych w Polsce (uwzględnia weekendy i święta).",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog=HELP_EPILOG,
     )
     parser.add_argument(
         "-v", "--version", action="version", version=f"%(prog)s {__version__}"
@@ -360,6 +377,30 @@ def main():
         help="Zwróć tylko wynikową datę.",
     )
     p_add.set_defaults(func=cmd_add)
+
+    help_topics = {
+        "count": p_count,
+        "holidays": p_holidays,
+        "add": p_add,
+    }
+
+    def _cmd_help(args):
+        if args.topic:
+            target = help_topics.get(args.topic)
+            if not target:
+                fail(f"Nieznany temat pomocy: {args.topic}")
+            target.print_help()
+        else:
+            parser.print_help()
+
+    p_help = subparsers.add_parser("help", help="Pokaż pomoc ogólną lub dla polecenia.")
+    p_help.add_argument(
+        "topic",
+        nargs="?",
+        choices=sorted(help_topics.keys()),
+        help="Temat pomocy (count, add, holidays).",
+    )
+    p_help.set_defaults(func=_cmd_help)
 
     args = parser.parse_args()
     args.func(args)
