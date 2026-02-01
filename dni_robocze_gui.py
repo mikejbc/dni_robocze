@@ -337,7 +337,7 @@ class DatePicker(tk.Frame):
 
             # Escape closes the calendar
             self._escape_id = root.bind("<Escape>", lambda _e: self._close_calendar(), add="+")
-        except (tk.TclError, AttributeError) as e:
+        except (tk.TclError, AttributeError):
             # If calendar creation fails, clean up and fail silently
             if self._cal_frame and self._cal_frame.winfo_exists():
                 self._cal_frame.destroy()
@@ -606,8 +606,7 @@ class WorkDaysApp(tk.Tk):
         for item in self._tree.get_children():
             self._tree.delete(item)
         try:
-            year_str = self._holiday_year_var.get().strip()
-            year = int(year_str)
+            year = int(self._holiday_year_var.get().strip())
             # Validate year is within supported range
             if year < MIN_YEAR or year > MAX_YEAR:
                 self._tree.insert(
