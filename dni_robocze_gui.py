@@ -57,8 +57,16 @@ class CalendarWidget(tk.Frame):
         super().__init__(master, bg=COLOR_BG, **kwargs)
         self._on_date_select = on_date_select
         today = datetime.date.today()
-        self._year = today.year
-        self._month = today.month
+        # Clamp initial year/month to supported range
+        if today.year < MIN_YEAR:
+            self._year = MIN_YEAR
+            self._month = 1
+        elif today.year > MAX_YEAR:
+            self._year = MAX_YEAR
+            self._month = 12
+        else:
+            self._year = today.year
+            self._month = today.month
         self._selected_date = None
         self._today = today
         self._cal = calendar.Calendar(firstweekday=0)
@@ -184,11 +192,15 @@ class CalendarWidget(tk.Frame):
         hit = self._hit_test(event.x, event.y)
         if hit:
             _, _, day = hit
-            dt = datetime.date(self._year, self._month, day)
-            self._selected_date = dt
-            self._refresh()
-            if self._on_date_select:
-                self._on_date_select(dt)
+            try:
+                dt = datetime.date(self._year, self._month, day)
+                self._selected_date = dt
+                self._refresh()
+                if self._on_date_select:
+                    self._on_date_select(dt)
+            except (ValueError, OverflowError):
+                # Invalid date construction, ignore click
+                pass
 
     def _on_canvas_motion(self, event):
         hit = self._hit_test(event.x, event.y)
@@ -221,6 +233,9 @@ class CalendarWidget(tk.Frame):
         self._refresh()
 
     def set_date(self, dt):
+        # Validate date is within supported range
+        if dt.year < MIN_YEAR or dt.year > MAX_YEAR:
+            return
         self._selected_date = dt
         self._year = dt.year
         self._month = dt.month
@@ -244,7 +259,15 @@ class DatePicker(tk.Frame):
     def __init__(self, master, label_text="Data:", **kwargs):
         super().__init__(master, bg=COLOR_BG, **kwargs)
         self._cal_frame = None
-        self._selected_date = datetime.date.today()
+        self._escape_id = None
+        today = datetime.date.today()
+        # Ensure today is within supported range, or use first/last supported year
+        if today.year < MIN_YEAR:
+            self._selected_date = datetime.date(MIN_YEAR, 1, 1)
+        elif today.year > MAX_YEAR:
+            self._selected_date = datetime.date(MAX_YEAR, 12, 31)
+        else:
+            self._selected_date = today
 
         tk.Label(
             self, text=label_text, font=FONT_LABEL, bg=COLOR_BG, width=6, anchor=tk.W,
@@ -273,11 +296,17 @@ class DatePicker(tk.Frame):
         try:
             normalized = text.replace(".", "-").replace(" ", "-")
             dt = datetime.date.fromisoformat(normalized)
+            # Validate date is within supported year range
+            if dt.year < MIN_YEAR or dt.year > MAX_YEAR:
+                # Restore previous valid date
+                self._entry_var.set(self._selected_date.isoformat())
+                return
             self._selected_date = dt
             self._entry_var.set(dt.isoformat())
             self._day_label.configure(text=f"({DAY_NAMES_PL[dt.weekday()]})")
-        except ValueError:
-            pass
+        except (ValueError, OverflowError):
+            # Restore previous valid date on any error
+            self._entry_var.set(self._selected_date.isoformat())
 
     def _toggle_calendar(self):
         if self._cal_frame and self._cal_frame.winfo_exists():
@@ -288,25 +317,31 @@ class DatePicker(tk.Frame):
     def _open_calendar(self):
         self._on_entry_commit()
 
-        root = self.winfo_toplevel()
-        self._cal_frame = tk.Frame(root, bg=COLOR_POPUP_BORDER, relief=tk.RAISED, bd=1)
+        try:
+            root = self.winfo_toplevel()
+            self._cal_frame = tk.Frame(root, bg=COLOR_POPUP_BORDER, relief=tk.RAISED, bd=1)
 
-        inner = tk.Frame(self._cal_frame, bg=COLOR_BG)
-        inner.pack(padx=1, pady=1)
+            inner = tk.Frame(self._cal_frame, bg=COLOR_BG)
+            inner.pack(padx=1, pady=1)
 
-        cal = CalendarWidget(inner, on_date_select=self._on_pick)
-        cal.set_date(self._selected_date)
-        cal.pack(padx=2, pady=2)
+            cal = CalendarWidget(inner, on_date_select=self._on_pick)
+            cal.set_date(self._selected_date)
+            cal.pack(padx=2, pady=2)
 
-        # Position the overlay relative to the root window
-        self.update_idletasks()
-        rx = self._entry.winfo_rootx() - root.winfo_rootx()
-        ry = self._entry.winfo_rooty() - root.winfo_rooty() + self._entry.winfo_height() + 2
-        self._cal_frame.place(x=rx, y=ry)
-        self._cal_frame.lift()
+            # Position the overlay relative to the root window
+            self.update_idletasks()
+            rx = self._entry.winfo_rootx() - root.winfo_rootx()
+            ry = self._entry.winfo_rooty() - root.winfo_rooty() + self._entry.winfo_height() + 2
+            self._cal_frame.place(x=rx, y=ry)
+            self._cal_frame.lift()
 
-        # Escape closes the calendar
-        self._escape_id = root.bind("<Escape>", lambda _e: self._close_calendar(), add="+")
+            # Escape closes the calendar
+            self._escape_id = root.bind("<Escape>", lambda _e: self._close_calendar(), add="+")
+        except (tk.TclError, AttributeError) as e:
+            # If calendar creation fails, clean up and fail silently
+            if self._cal_frame and self._cal_frame.winfo_exists():
+                self._cal_frame.destroy()
+            self._cal_frame = None
 
     def _on_pick(self, dt):
         self._selected_date = dt
@@ -319,7 +354,10 @@ class DatePicker(tk.Frame):
             self._cal_frame.destroy()
         self._cal_frame = None
         try:
-            self.winfo_toplevel().unbind("<Escape>", self._escape_id)
+            root = self.winfo_toplevel()
+            if hasattr(self, '_escape_id') and self._escape_id:
+                root.unbind("<Escape>", self._escape_id)
+                self._escape_id = None
         except (tk.TclError, ValueError, AttributeError):
             pass
 
@@ -328,6 +366,9 @@ class DatePicker(tk.Frame):
         return self._selected_date
 
     def set_date(self, dt):
+        # Validate date is within supported range
+        if dt.year < MIN_YEAR or dt.year > MAX_YEAR:
+            return
         self._selected_date = dt
         self._entry_var.set(dt.isoformat())
         self._day_label.configure(text=f"({DAY_NAMES_PL[dt.weekday()]})")
@@ -408,6 +449,19 @@ class WorkDaysApp(tk.Tk):
     def _do_count(self):
         start = self._count_start.get_date()
         end = self._count_end.get_date()
+        # Validate dates are within supported range
+        if start.year < MIN_YEAR or start.year > MAX_YEAR:
+            self._count_result.configure(
+                text=f"Błąd: Data początkowa musi być w zakresie {MIN_YEAR}-{MAX_YEAR}.",
+                fg=COLOR_RESULT_ERR,
+            )
+            return
+        if end.year < MIN_YEAR or end.year > MAX_YEAR:
+            self._count_result.configure(
+                text=f"Błąd: Data końcowa musi być w zakresie {MIN_YEAR}-{MAX_YEAR}.",
+                fg=COLOR_RESULT_ERR,
+            )
+            return
         try:
             result = count_workdays(start, end)
             self._count_result.configure(
@@ -443,10 +497,11 @@ class WorkDaysApp(tk.Tk):
         ).pack(side=tk.LEFT)
 
         self._add_days_var = tk.IntVar(value=5)
-        ttk.Spinbox(
-            spin_frame, from_=-999, to=999, width=8,
+        spinbox = ttk.Spinbox(
+            spin_frame, from_=-9999, to=9999, width=8,
             textvariable=self._add_days_var, font=FONT_LABEL,
-        ).pack(side=tk.LEFT)
+        )
+        spinbox.pack(side=tk.LEFT)
 
         tk.Label(
             spin_frame, text="(ujemne = cofnij)", font=FONT_SMALL,
@@ -465,8 +520,22 @@ class WorkDaysApp(tk.Tk):
 
     def _do_add(self):
         start = self._add_start.get_date()
+        # Validate start date is within supported range
+        if start.year < MIN_YEAR or start.year > MAX_YEAR:
+            self._add_result.configure(
+                text=f"Błąd: Data musi być w zakresie {MIN_YEAR}-{MAX_YEAR}.",
+                fg=COLOR_RESULT_ERR,
+            )
+            return
         try:
             n = self._add_days_var.get()
+            # Validate bounds to prevent extreme values
+            if abs(n) > 9999:
+                self._add_result.configure(
+                    text="Błąd: liczba dni musi być w zakresie -9999 do 9999.",
+                    fg=COLOR_RESULT_ERR,
+                )
+                return
         except (tk.TclError, ValueError):
             self._add_result.configure(
                 text="Błąd: wpisz poprawną liczbę dni.", fg=COLOR_RESULT_ERR,
@@ -537,7 +606,19 @@ class WorkDaysApp(tk.Tk):
         for item in self._tree.get_children():
             self._tree.delete(item)
         try:
-            year = int(self._holiday_year_var.get())
+            year_str = self._holiday_year_var.get().strip()
+            year = int(year_str)
+            # Validate year is within supported range
+            if year < MIN_YEAR or year > MAX_YEAR:
+                self._tree.insert(
+                    "", tk.END,
+                    values=(
+                        "Błąd",
+                        f"Obsługiwane lata: {MIN_YEAR}-{MAX_YEAR}",
+                        ""
+                    )
+                )
+                return
             holidays = get_holidays_with_names(year)
         except (ValueError, KeyError) as e:
             self._tree.insert("", tk.END, values=("Błąd", str(e), ""))
