@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "dni-robocze-pl"
+version = "1.0.0"
+description = "Kalkulator dni roboczych w Polsce"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.7"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Natural Language :: Polish",
+    "Topic :: Office/Business",
+]
+
+[project.scripts]
+dni-robocze = "dni_robocze:main"
+dni-robocze-gui = "dni_robocze_gui:run_gui"
+
+[tool.setuptools]
+py-modules = ["dni_robocze", "dni_robocze_gui"]

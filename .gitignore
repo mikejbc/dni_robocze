@@ -1,3 +1,6 @@
 __pycache__/
 *.sync-conflict-*
 .DS_Store
+dist/
+build/
+*.egg-info/
