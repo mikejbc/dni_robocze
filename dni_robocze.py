@@ -208,12 +208,13 @@ def parse_date(date_str):
         return _range_check(base)
 
     if s.startswith("+") or s.startswith("-"):
+        raw = s.rstrip("dD")
         try:
-            delta_days = int(s)
+            delta_days = int(raw)
         except ValueError:
             raise argparse.ArgumentTypeError(
                 f"Nieprawidłowy zapis przesunięcia: '{date_str}'. "
-                "Użyj np. +5, -10 lub 'today'."
+                "Użyj np. +5d, -10 lub 'today'."
             )
         dt = base + datetime.timedelta(days=delta_days)
         return _range_check(dt)
@@ -224,7 +225,7 @@ def parse_date(date_str):
     except ValueError:
         raise argparse.ArgumentTypeError(
             f"Nieprawidłowy format daty: '{date_str}'. "
-            "Użyj YYYY-MM-DD, YYYY.MM.DD, YYYY MM DD, 'today', +Nd lub -Nd."
+            "Użyj YYYY-MM-DD, YYYY.MM.DD, YYYY MM DD, 'today', +N(d) lub -N(d)."
         )
 
     return _range_check(dt)
@@ -238,7 +239,7 @@ def fail(message):
 def cmd_count(args):
     """Handle the 'count' subcommand."""
 
-    if args.from_date or args.to_date:
+    if args.from_date is not None or args.to_date is not None:
         if args.start is not None or args.end is not None:
             fail("Użyj albo pozycyjnych dat, albo opcji --from/--to, nie obu naraz.")
         if args.from_date is None or args.to_date is None:
@@ -251,14 +252,10 @@ def cmd_count(args):
         start = args.start
         end = args.end
 
-    if start > end:
-        fail("Data początkowa nie może być późniejsza niż data końcowa.")
-
     try:
         result = count_workdays(start, end)
     except ValueError as e:
         fail(str(e))
-        return
 
     if args.quiet:
         print(result)
@@ -273,7 +270,6 @@ def cmd_holidays(args):
         holidays = get_holidays_with_names(year)
     except ValueError as e:
         fail(str(e))
-        return
 
     if args.quiet:
         for date, _name in holidays:
@@ -296,7 +292,6 @@ def cmd_add(args):
         result = add_workdays(start, n)
     except ValueError as e:
         fail(str(e))
-        return
 
     direction = "dodaniu" if n >= 0 else "odjęciu"
     day_name = DAY_NAMES_PL[result.weekday()]
