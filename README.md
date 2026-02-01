@@ -35,13 +35,14 @@ Kalendarz z podglądem świąt (czerwone), weekendów (szare) i dnia dzisiejszeg
 
 ## Użycie (wiersz poleceń)
 
-Daty można podawać w formacie `YYYY-MM-DD`, `YYYY.MM.DD` lub `"YYYY MM DD"`.
+Daty można podawać w formacie `YYYY-MM-DD`, `YYYY.MM.DD`, `"YYYY MM DD"` oraz pomocniczo: `today`, `+Nd`, `-Nd` (liczone od dnia dzisiejszego). Obsługiwane lata: 2020-2030.
 
 ### Policz dni robocze między datami
 
 ```
 dni-robocze count 2026-01-01 2026-12-31
-dni-robocze count 2026.01.01 2026.12.31
+dni-robocze count --from 2026.01.01 --to 2026.12.31
+dni-robocze count --from today --to +10 --quiet
 # Dni robocze od 2026-01-01 do 2026-12-31: 253
 ```
 
@@ -55,10 +56,21 @@ dni-robocze holidays 2026
 
 ```
 dni-robocze add 2026-01-29 10
+dni-robocze add 2026-01-29 -5 --quiet
 # Po dodaniu 10 dni roboczych od 2026-01-29: 2026-02-12 (czwartek)
-
-dni-robocze add 2026-01-29 -5
 # Po odjęciu 5 dni roboczych od 2026-01-29: 2026-01-22 (czwartek)
+```
+
+### Wyświetl tylko daty świąt (quiet)
+
+```
+dni-robocze holidays 2026 --quiet
+```
+
+### Wersja
+
+```
+dni-robocze --version
 ```
 
 ## Święta ustawowe
