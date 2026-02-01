@@ -34,7 +34,7 @@ def _get_version():
     try:
         return metadata.version("dni-robocze-pl")
     except metadata.PackageNotFoundError:
-        return "1.0.5"
+        return "1.0.6"
 
 
 __version__ = _get_version()
