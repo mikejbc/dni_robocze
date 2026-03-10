@@ -2,53 +2,57 @@
 """Polski kalkulator dni roboczych / Polish Work Days Calculator.
 
 Calculates work days in Poland accounting for weekends and all Polish
-public holidays (14 from 2025+, 13 before). Easter dates are hardcoded
-for years 2020-2030.
+public holidays (14 from 2025+, 13 before). Easter dates are calculated
+dynamically for any year.
 """
 
 import argparse
 import datetime
 import sys
 from importlib import metadata
-from typing import NoReturn
-
-# Hardcoded Easter Sunday dates for 2020-2030
-EASTER_DATES = {
-    2020: datetime.date(2020, 4, 12),
-    2021: datetime.date(2021, 4, 4),
-    2022: datetime.date(2022, 4, 17),
-    2023: datetime.date(2023, 4, 9),
-    2024: datetime.date(2024, 3, 31),
-    2025: datetime.date(2025, 4, 20),
-    2026: datetime.date(2026, 4, 5),
-    2027: datetime.date(2027, 3, 28),
-    2028: datetime.date(2028, 4, 16),
-    2029: datetime.date(2029, 4, 1),
-    2030: datetime.date(2030, 4, 21),
-}
-
-SUPPORTED_YEARS = sorted(EASTER_DATES.keys())
+from typing import List, NoReturn, Optional, Set, Tuple, Union
 
 
-def _get_version():
+def _get_version() -> str:
     try:
         return metadata.version("dni-robocze-pl")
     except metadata.PackageNotFoundError:
-        return "1.0.6"
+        return "1.1.0"
 
 
 __version__ = _get_version()
 
 
-def get_holidays(year):
-    """Return a set of datetime.date for all Polish public holidays in a given year."""
-    if year not in EASTER_DATES:
-        raise ValueError(
-            f"Rok {year} nie jest obsługiwany. "
-            f"Obsługiwane lata: {SUPPORTED_YEARS[0]}-{SUPPORTED_YEARS[-1]}."
-        )
+def calculate_easter(year: int) -> datetime.date:
+    """Calculate Easter Sunday date for a given year using the anonymous algorithm.
+    (Meeus/Jones/Butcher's algorithm)
+    """
+    a = year % 19
+    b = year // 100
+    c = year % 100
+    d = b // 4
+    e = b % 4
+    f = (b + 8) // 25
+    g = (b - f + 1) // 3
+    h = (19 * a + b - d - g + 15) % 30
+    i = c // 4
+    k = c % 4
+    l = (32 + 2 * e + 2 * i - h - k) % 7
+    m = (a + 11 * h + 22 * l) // 451
+    
+    month = (h + l - 7 * m + 114) // 31
+    day = ((h + l - 7 * m + 114) % 31) + 1
+    
+    return datetime.date(year, month, day)
 
-    easter = EASTER_DATES[year]
+
+def get_holidays(year: int) -> Set[datetime.date]:
+    """Return a set of datetime.date for all Polish public holidays in a given year."""
+    try:
+        easter = calculate_easter(year)
+    except ValueError:
+        # datetime.date might fail for extremely far future/past years if outside supported range
+        raise ValueError(f"Rok {year} nie jest obsługiwany przez bibliotekę datetime.")
 
     holidays = {
         # Fixed-date holidays
@@ -91,15 +95,12 @@ HOLIDAY_NAMES = [
 WIGILIA = (12, 24, "Wigilia Bożego Narodzenia")
 
 
-def get_holidays_with_names(year):
+def get_holidays_with_names(year: int) -> List[Tuple[datetime.date, str]]:
     """Return a sorted list of (date, name) tuples for all holidays in a year."""
-    if year not in EASTER_DATES:
-        raise ValueError(
-            f"Rok {year} nie jest obsługiwany. "
-            f"Obsługiwane lata: {SUPPORTED_YEARS[0]}-{SUPPORTED_YEARS[-1]}."
-        )
-
-    easter = EASTER_DATES[year]
+    try:
+        easter = calculate_easter(year)
+    except ValueError:
+         raise ValueError(f"Rok {year} nie jest obsługiwany przez bibliotekę datetime.")
 
     result = []
     for month, day, name in HOLIDAY_NAMES:
@@ -118,7 +119,7 @@ def get_holidays_with_names(year):
     return result
 
 
-def is_workday(date):
+def is_workday(date: datetime.date) -> bool:
     """Return True if the given date is a work day (not weekend, not holiday)."""
     if date.weekday() >= 5:  # Saturday=5, Sunday=6
         return False
@@ -129,7 +130,7 @@ def is_workday(date):
     return date not in holidays
 
 
-def count_workdays(start, end):
+def count_workdays(start: datetime.date, end: datetime.date) -> int:
     """Count work days in the inclusive range [start, end]."""
     if start > end:
         raise ValueError("Data początkowa nie może być późniejsza niż data końcowa.")
@@ -149,7 +150,7 @@ def count_workdays(start, end):
     return count
 
 
-def add_workdays(start, n):
+def add_workdays(start: datetime.date, n: int) -> datetime.date:
     """Add (or subtract if negative) n work days to start date.
 
     Returns the resulting date. The start date itself is NOT counted —
@@ -165,14 +166,10 @@ def add_workdays(start, n):
 
     while remaining > 0:
         current += one_day
-        try:
-            if is_workday(current):
-                remaining -= 1
-        except ValueError:
-            raise ValueError(
-                f"Wyszliśmy poza obsługiwany zakres lat "
-                f"({SUPPORTED_YEARS[0]}-{SUPPORTED_YEARS[-1]})."
-            )
+        # Since we removed explicit supported years check, this loop just proceeds.
+        # However, datetime constraints still apply (years 1-9999).
+        if is_workday(current):
+            remaining -= 1
 
     return current
 
@@ -188,17 +185,11 @@ DAY_NAMES_PL = {
 }
 
 
-def parse_date(date_str):
+def parse_date(date_str: str) -> datetime.date:
     """Parse date accepting ISO-like formats plus helpers: today, +Nd, -Nd."""
 
-    def _range_check(dt):
-        if dt.year < SUPPORTED_YEARS[0] or dt.year > SUPPORTED_YEARS[-1]:
-            raise argparse.ArgumentTypeError(
-                f"Data '{date_str}' poza obsługiwanym zakresem "
-                f"({SUPPORTED_YEARS[0]}-{SUPPORTED_YEARS[-1]})."
-            )
-        return dt
-
+    # Note: Removed _range_check as we now support generic years.
+    
     base = datetime.date.today()
     s = date_str.strip()
 
@@ -206,7 +197,7 @@ def parse_date(date_str):
         raise argparse.ArgumentTypeError("Podaj datę.")
 
     if s.lower() == "today":
-        return _range_check(base)
+        return base
 
     if s.startswith("+") or s.startswith("-"):
         raw = s.rstrip("dD")
@@ -218,7 +209,7 @@ def parse_date(date_str):
                 "Użyj np. +5d, -10 lub 'today'."
             )
         dt = base + datetime.timedelta(days=delta_days)
-        return _range_check(dt)
+        return dt
 
     normalized = s.replace(".", "-").replace(" ", "-")
     try:
@@ -229,15 +220,15 @@ def parse_date(date_str):
             "Użyj YYYY-MM-DD, YYYY.MM.DD, YYYY MM DD, 'today', +N(d) lub -N(d)."
         )
 
-    return _range_check(dt)
+    return dt
 
 
-def fail(message) -> NoReturn:
+def fail(message: str) -> NoReturn:
     print(f"Błąd: {message}", file=sys.stderr)
     sys.exit(1)
 
 
-def cmd_count(args):
+def cmd_count(args: argparse.Namespace) -> None:
     """Handle the 'count' subcommand."""
 
     if args.from_date is not None or args.to_date is not None:
@@ -264,7 +255,7 @@ def cmd_count(args):
         print(f"Dni robocze od {start} do {end}: {result}")
 
 
-def cmd_holidays(args):
+def cmd_holidays(args: argparse.Namespace) -> None:
     """Handle the 'holidays' subcommand."""
     year = args.year
     try:
@@ -285,7 +276,7 @@ def cmd_holidays(args):
         print(f"{date}     {day_name:<16} {name}")
 
 
-def cmd_add(args):
+def cmd_add(args: argparse.Namespace) -> None:
     """Handle the 'add' subcommand."""
     start = args.start
     n = args.days
@@ -314,11 +305,10 @@ Przykłady:
   dni-robocze --version
 
 Formaty dat: YYYY-MM-DD, YYYY.MM.DD, "YYYY MM DD", today, +N(d), -N(d)
-Zakres lat: 2020-2030
 """
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(
         description="Kalkulator dni roboczych w Polsce (uwzględnia weekendy i święta).",
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -357,7 +347,7 @@ def main():
     p_holidays = subparsers.add_parser(
         "holidays", help="Wyświetl święta ustawowe w danym roku."
     )
-    p_holidays.add_argument("year", type=int, help="Rok (2020-2030)")
+    p_holidays.add_argument("year", type=int, help="Rok (np. 2025)")
     p_holidays.add_argument(
         "-q",
         "--quiet",
@@ -384,7 +374,7 @@ def main():
         "add": p_add,
     }
 
-    def _cmd_help(args):
+    def _cmd_help(args: argparse.Namespace) -> None:
         if args.topic:
             target = help_topics.get(args.topic)
             if not target:

@@ -2,7 +2,7 @@
 
 Kalkulator dni roboczych w Polsce. Uwzglednia weekendy i polskie swieta ustawowe (13 do 2024, 14 od 2025 — Wigilia), w tym ruchome zalezne od Wielkanocy.
 
-Obsługiwane lata: 2020-2030.
+Obsługiwane lata: **dowolny zakres** (obliczanie dynamiczne).
 
 ## Wymagania
 
@@ -35,7 +35,7 @@ Kalendarz z podglądem świąt (czerwone), weekendów (szare) i dnia dzisiejszeg
 
 ## Użycie (wiersz poleceń)
 
-Daty można podawać w formacie `YYYY-MM-DD`, `YYYY.MM.DD`, `"YYYY MM DD"` oraz pomocniczo: `today`, `+N`/`+Nd`, `-N`/`-Nd` (liczone od dnia dzisiejszego). Obsługiwane lata: 2020-2030.
+Daty można podawać w formacie `YYYY-MM-DD`, `YYYY.MM.DD`, `"YYYY MM DD"` oraz pomocniczo: `today`, `+N`/`+Nd`, `-N`/`-Nd` (liczone od dnia dzisiejszego).
 
 ### Policz dni robocze między datami
 

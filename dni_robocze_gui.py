@@ -8,7 +8,6 @@ from tkinter import ttk
 
 from dni_robocze import (
     DAY_NAMES_PL,
-    SUPPORTED_YEARS,
     add_workdays,
     count_workdays,
     get_holidays,
@@ -35,8 +34,11 @@ COLOR_RESULT_ERR = "#c62828"
 
 DAY_HEADERS = ["Pn", "Wt", "Śr", "Cz", "Pt", "So", "Nd"]
 
-MIN_YEAR = SUPPORTED_YEARS[0]
-MAX_YEAR = SUPPORTED_YEARS[-1]
+# Dynamic supported years for GUI (current year +/- range)
+THIS_YEAR = datetime.date.today().year
+MIN_YEAR = THIS_YEAR - 50
+MAX_YEAR = THIS_YEAR + 50
+GUI_YEARS = list(range(MIN_YEAR, MAX_YEAR + 1))
 
 FONT_DAY = ("Helvetica", 12)
 FONT_DAY_HEADER = ("Helvetica", 10, "bold")
@@ -101,6 +103,8 @@ class CalendarWidget(tk.Frame):
         month_name = self._polish_month(self._month)
         self._lbl_title.configure(text=f"{month_name} {self._year}")
 
+        # Expanded range logic or just simple prev/next
+        # We allow navigation freely within the wide GUI_YEARS range
         at_min = (self._year, self._month) <= (MIN_YEAR, 1)
         at_max = (self._year, self._month) >= (MAX_YEAR, 12)
         self._btn_prev.configure(state="disabled" if at_min else "normal")
@@ -442,8 +446,8 @@ class WorkDaysApp(tk.Tk):
         spin_frame.pack(anchor=tk.W, pady=6)
 
         tk.Label(
-            spin_frame, text="Liczba dni:", font=FONT_LABEL, bg=COLOR_BG, width=6, anchor=tk.W,
-        ).pack(side=tk.LEFT)
+            spin_frame, text="Liczba dni:", font=FONT_LABEL, bg=COLOR_BG, anchor=tk.W,
+        ).pack(side=tk.LEFT, padx=(0, 6))
 
         self._add_days_var = tk.IntVar(value=5)
         ttk.Spinbox(
@@ -507,7 +511,7 @@ class WorkDaysApp(tk.Tk):
         self._holiday_year_var = tk.StringVar(value=str(datetime.date.today().year))
         combo = ttk.Combobox(
             top, textvariable=self._holiday_year_var,
-            values=[str(y) for y in SUPPORTED_YEARS],
+            values=[str(y) for y in GUI_YEARS],
             state="readonly", width=8, font=FONT_LABEL,
         )
         combo.pack(side=tk.LEFT)
